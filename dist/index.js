@@ -27,7 +27,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 require("babel-polyfill");
 
 var Promise = require('bluebird').Promise;
-var fs = require('fs');
 var path = require('path');
 var helpers = require('./helpers');
 var errors = require('./errors');

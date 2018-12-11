@@ -3,7 +3,6 @@
 require("babel-polyfill");
 
 const Promise = require('bluebird').Promise
-const fs = require('fs')
 const path = require('path')
 const helpers = require('./helpers')
 const errors = require('./errors')
