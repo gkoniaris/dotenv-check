@@ -1,0 +1,36 @@
+{
+  "name": "dotenv-check",
+  "version": "1.0.0",
+  "description": "A module that performs deployment checks, based on info found on your .env files",
+  "main": "src/cli.js",
+  "scripts": {
+    "test": "nyc mocha && nyc report --reporter=html",
+    "jsdoc": "rm -r dist && mkdir -p dist && jsdoc src --destination documentation",
+    "babel": "npx babel src --out-dir dist",
+    "release": "npm run test && npm run jsdoc && npm run babel --"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-plugin-syntax-async-functions": "^6.1.4",
+    "babel-plugin-transform-regenerator": "^6.1.4",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.1.4",
+    "chai": "^4.2.0",
+    "jsdoc": "^3.5.5",
+    "mocha": "^5.2.0",
+    "mock-fs": "^4.7.0",
+    "nyc": "^13.1.0"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.26.0",
+    "babel-runtime": "^6.26.0",
+    "bluebird": "^3.5.3",
+    "minimist": "^1.2.0",
+    "recursive-readdir": "^2.2.2"
+  },
+  "bin": {
+    "dotenv-check": "dist/cli.js"
+  }
+}

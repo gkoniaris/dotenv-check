@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: index.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: index.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* @module dotenv-check A module that performs deployment checks, based on info found on your .env files */
+
+require("babel-polyfill");
+
+const Promise = require('bluebird').Promise
+const fs = require('fs')
+const path = require('path')
+const helpers = require('./helpers')
+const errors = require('./errors')
+const recursiveFileScan = require("recursive-readdir")
+
+/**
+ * Reads a .env file and returns its content in utf-8 format
+ * 
+ * @param {String} fileName The name of the .env file to check
+ * 
+ * @returns {Promise} Promise object represents the contents of the file
+ */
+const readDotenv = async function (fileName) {
+    try {
+        return await helpers.readFileAsync(path.resolve(fileName), 'UTF8')
+    } catch(err){
+        throw new errors.DotenvCheckFileNotFoundError(`File ${fileName} could not be found`)
+    }
+}
+
+/**
+ * Splits the file into lines, in every linebreak, and then splits on = character
+ * 
+ * @param {String} file The .env file as a utf-8 string
+ * 
+ * @return {Array} An array containing each line formatted
+ */
+const transformDotenv = function (file) {
+    const lines = file.match(/[^\r\n]+/g) //split in new lines
+    if (!lines) return []
+    const processedLines = lines.map(line => {
+        // In case of pure whitespace, ignore
+        if (/^(\s)*$/.test(line)) {
+            return null
+        }
+        const lineParts = helpers.extendedSplit(line, '=', 2)
+        return lineParts
+    }).filter(line => line !== null) // filter out empty lines
+    return processedLines
+}
+
+/**
+ * Checks if all environment variables passed to the .env file have valid names, and if there are any duplicates
+ * 
+ * @param {Array} processedLines An array, representing each line of the .env file as an array, that contains the environment variable name in index 0, and the value of the variable in index 1 
+ * 
+ * @return {Map} A map containing the environment variable names as its keys, and null as the value of these keys
+ */
+const validateDotenv = function(processedLines) {
+    const variables = new Map()
+    processedLines.forEach((line, idx) => {
+        const invalidLine = idx + 1
+        // Invalid syntax, correct example: NODE_ENV=production, wrong example: NODE_ENV
+        if (line.length !== 2) {
+            throw new errors.DotenvCheckInvalidDotenvFileStructureError(`Dotenv file is invalid in line ${invalidLine}`)
+        }
+        // Invalid environment variable name
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(line[0])) {
+            // Invalid first letter, first letter is more strict and must contain only characters from a-z (upper or lowercase) or an undersoce
+            if (!/^[a-zA-Z_]$/.test(line[0].split('')[0])) {
+                throw new errors.DotenvCheckInvalidDotenvVariableNameError(`Invalid variable name ${line[0]} in line ${invalidLine}. First letter allowed characters: latin letters, _`)
+            }
+            // Invalid variable name 
+            else {
+                throw new errors.DotenvCheckInvalidDotenvVariableNameError(`Invalid variable name ${line[0]} in line ${invalidLine}. Allowed characters: latin letters, numbers, _`)
+            }
+        }
+        // Duplicate variable error handling
+        if (variables.has(line[0])) {
+            throw new errors.DotenvCheckDotenvDuplicateVariableError(`Variable ${line[0]} used twice in line ${invalidLine}`)
+        }
+        variables.set(line[0], '')
+    })
+    return variables
+}
+
+/**
+ * Checks if the sample and the original .env files contain the exact same variables
+ * 
+ * @param {Map} sample The variables that were retrieved from the sample .env file
+ * @param {Map} original The variables that were retrieved from the .env file
+ * 
+ * @return {Boolean} Returns true if both files match each other
+ */
+const compareDotenvs = function (sample, original) {
+    const sampleVariableNames = sample.keys()
+    for (var name of sampleVariableNames) {
+        if (!original.has(name)) throw new errors.DotenvCheckDotenvFilesMismatchError(`Variable: ${name} is missing in the original .env file`)
+    }
+
+    const originalVariableNames = original.keys()
+    for (var name of originalVariableNames) {
+        if (!sample.has(name)) throw new errors.DotenvCheckDotenvFilesMismatchError(`Variable: ${name} is missing in the sample .env file`)
+    }
+
+    return true
+}
+
+/**
+ * Checks if the variables retrieved from the .env file, exist in the current node running instance
+ * 
+ * @param {Map} variables A Map of the variables that were retrieved from the .env file
+ */
+const checkEnvsAreExported = function (variables) {
+    const variableNames = variables.keys()
+    for (var name of variableNames) {
+        if (!process.env[name]) {
+            throw new errors.DotenvCheckVariableNotExportedError(`Environment variable ${name} has not been exported correctly`)
+        }
+    }
+    return variables
+}
+
+/**
+ * Scans source code files, finds used environment variables, and if there are variables that dont exist in the .env
+ * file, throws an error
+ * 
+ * @param {*} sourceCodeFolder 
+ * @param {*} originalVariables 
+ */
+const checkSourceCode = async function (sourceCodeFolder, originalVariables) {
+    /**
+     * Function to ignore all files, except javascript ones
+     * @param {String} file 
+     * @param {Object} stats 
+     */
+    function ignoreFunc(file, stats) {
+        return !stats.isDirectory() &amp;&amp; path.extname(file) !== ".js";
+    }
+
+    const sourceCodePath = path.resolve(sourceCodeFolder)
+
+    const files = await recursiveFileScan(sourceCodePath, [ignoreFunc])
+    return Promise.map(files, async function(file) {
+        let fileContents = null
+        // Read each file
+        try {
+            fileContents = await helpers.readFileAsync(file, 'UTF8')
+        } catch (err) {
+            // Ignore read errors for now
+            // TODO: return an array with soft errors
+        }
+        if (fileContents) {
+            const variableMatchesInCode = fileContents.replace(/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/gm, '').match(/((process\.env\.){1}([a-zA-Z_1-9]*))\b/g)
+            if (variableMatchesInCode) {
+                variableMatchesInCode.forEach(item => {
+                    const variableName = item.substring(12)
+                    if (!originalVariables.has(variableName)) throw new Error(`Unknown variable ${variableName} found in code`)  
+                })
+            }
+        }
+    }, {concurrency: 5})
+}
+
+/**
+ * @constructor
+ * 
+ * @param {Object} [configuration] An object containing configuration about how the module will run
+ * @param {String} [configuration.envFile=null] - The path to the .env file, relative to the project path
+ * @param {String} [configuration.sampleEnvFile=.env.sample] The path to the .env.sample file, relative to the project path
+ * @param {Boolean} [configuration.checkEnvsExported=false] Whether the module should check if the environment variables from the .env file exist in the current node running instance 
+ * @param {String} [configuration.sourceCode=null] The path of the source code to check, leave null if you dont want to check
+ */
+module.exports = function(configuration) {
+    this.configuration = Object.assign({}, {
+        envFile: null,
+        sampleEnvFile: '.env.sample',
+        checkEnvsExported: false,
+        sourceCode: null
+    }, configuration)
+
+    return {
+        /**
+         * Executes all validations
+         */
+        execute: async () => {
+            try {
+                if (!this.configuration.sampleEnvFile) {
+                    throw new errors.DotenvCheckConfigurationError('Sample .env file does not exist in your configuration')
+                }
+                await readDotenv(this.configuration.sampleEnvFile)
+                .then(transformDotenv)
+                .then(validateDotenv)
+                .then(variables => this.sampleVariables = variables)
+                
+                // If .env file is used, perform extra checks
+                if (this.configuration.envFile) {
+                    await readDotenv(this.configuration.envFile)
+                    .then(transformDotenv)
+                    .then(validateDotenv)
+                    .then(variables => this.variables = variables)
+                    compareDotenvs(this.sampleVariables, this.variables)
+                }
+            
+                if (this.configuration.checkEnvsExported) checkEnvsAreExported(this.sampleVariables)
+                if (this.configuration.sourceCode) await checkSourceCode(this.configuration.sourceCode, this.sampleVariables)
+            
+                return true
+            } catch (err) {
+                throw err
+            }
+        }
+    }
+}.bind({}) // Bind an empty object for babel to work correctly
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module.exports.html">exports</a></li></ul><h3>Global</h3><ul><li><a href="global.html#checkEnvsAreExported">checkEnvsAreExported</a></li><li><a href="global.html#checkSourceCode">checkSourceCode</a></li><li><a href="global.html#compareDotenvs">compareDotenvs</a></li><li><a href="global.html#execute">execute</a></li><li><a href="global.html#readDotenv">readDotenv</a></li><li><a href="global.html#transformDotenv">transformDotenv</a></li><li><a href="global.html#validateDotenv">validateDotenv</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Dec 11 2018 17:44:58 GMT+0200 (EET)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
