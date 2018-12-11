@@ -27,8 +27,8 @@ You can now use the script wherever you want. We recommend that you use it in th
 This module takes four optional arguments
 
 - `envFile` [default: null] The env file that is used in your current environment. If you don't use dotenv in your staging/production environment, but export the variables in some other way, leave this empty
-- `sampleEnvFile` [default: '.env.sample'] // The sample dotenv file.
-- `checkEnvsExported` [default: false] // Whether to check that the vars found in your .env.sample file have been exported in your current environment
+- `sampleEnvFile` [default: '.env.sample'] The sample dotenv file.
+- `checkEnvsExported` [default: false] Whether to check that the vars found in your .env.sample file have been exported in your current environment
 - `sourceCode` [default: null]
 
 The arguments must be passed in the npm script like this
