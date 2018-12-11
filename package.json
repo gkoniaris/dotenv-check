@@ -10,7 +10,7 @@
     "release": "npm run test && npm run jsdoc && npm run babel --"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "babel-plugin-syntax-async-functions": "^6.1.4",
     "babel-plugin-transform-regenerator": "^6.1.4",
