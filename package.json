@@ -24,6 +24,7 @@
     "nyc": "^13.1.0"
   },
   "dependencies": {
+    "lodash": ">=4.17.12",
     "babel-polyfill": "^6.26.0",
     "babel-runtime": "^6.26.0",
     "bluebird": "^3.5.3",
