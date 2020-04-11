@@ -27,7 +27,7 @@
     "babel-polyfill": "^6.26.0",
     "babel-runtime": "^6.26.0",
     "bluebird": "^3.5.3",
-    "minimist": "^1.2.0",
+    "minimist": "^1.2.3",
     "recursive-readdir": "^2.2.2"
   },
   "bin": {
