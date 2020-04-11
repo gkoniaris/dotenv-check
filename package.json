@@ -1,6 +1,6 @@
 {
   "name": "dotenv-check",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A module that performs deployment checks, based on info found on your .env files",
   "main": "src/cli.js",
   "scripts": {
