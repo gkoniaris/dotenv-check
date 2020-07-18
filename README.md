@@ -1,7 +1,7 @@
 <h1>Welcome to dotenv-check👋</h1>
 <p>
   <img alt="Version" src="https://img.shields.io/badge/version-1.0.4-blue.svg?cacheSeconds=2592000" />
-  <a href="https://gkoniaris.github.io/spb-unofficial-wrapper/" target="_blank">
+  <a href="https://gkoniaris.github.io/dotenv-check/" target="_blank">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
   </a>
   <a href="#" target="_blank">
