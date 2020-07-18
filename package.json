@@ -1,13 +1,14 @@
 {
   "name": "dotenv-check",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A module that performs deployment checks, based on info found on your .env files",
   "main": "src/cli.js",
   "scripts": {
     "test": "nyc mocha && nyc report --reporter=html",
     "docs": "jsdoc src --destination docs",
     "babel": "npx babel src --out-dir dist",
-    "release": "npm run test && npm run jsdoc && npm run babel --"
+    "build": "npm run babel --",
+    "release": "npm run test && npm run docs && npm run build"
   },
   "author": "",
   "license": "MIT",
