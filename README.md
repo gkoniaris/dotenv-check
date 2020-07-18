@@ -12,6 +12,8 @@
   </a>
 </p>
 
+> A nodeJS module that performs deployment checks, based on info found on your .env files
+
 ## What is dotenv-check
 
 Dotenv check is a node.js cli module, performing various checks on the environment variables that your application uses. It's functionality is based on the dotenv module's .env file structure, but it can also be used without it.
