@@ -5,7 +5,7 @@
   "main": "src/cli.js",
   "scripts": {
     "test": "nyc mocha && nyc report --reporter=html",
-    "jsdoc": "rm -r dist && mkdir -p dist && jsdoc src --destination documentation",
+    "docs": "jsdoc src --destination docs",
     "babel": "npx babel src --out-dir dist",
     "release": "npm run test && npm run jsdoc && npm run babel --"
   },
